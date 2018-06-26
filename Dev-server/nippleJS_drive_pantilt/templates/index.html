@@ -1,0 +1,387 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+    <title>Myro Bot</title>
+    <meta charset="utf-8">
+    <meta name="description" content="A controller for a Python-based Raspberry Pi robot.">
+    <meta name="author" content="Evan Simkowitz, modified by bogeuh">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="{{ url_for('static', filename='js/nipplejs.min.js') }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/joystick.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <script
+    src="https://code.jquery.com/jquery-3.1.1.min.js"
+    integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+    crossorigin="anonymous"></script>
+    <script type="text/javascript" charset="utf-8">
+        /*send data to app.py /control_event used for driving*/
+        function sendData(data) {
+            var XHR = new XMLHttpRequest();
+            var urlEncodedData = "";
+            var urlEncodedDataPairs = [];
+            var name;
+
+            // Turn the data object into an array of URL-encoded key/value pairs.
+            for (name in data) {
+                urlEncodedDataPairs.push(encodeURIComponent(name) + '=' + encodeURIComponent(data[name]));
+            }
+
+            // Combine the pairs into a single string and replace all %-encoded spaces to 
+            // the '+' character; matches the behaviour of browser form submissions.
+            urlEncodedData = urlEncodedDataPairs.join('&').replace(/%20/g, '+');
+
+            // Define what happens on successful data submission
+            XHR.addEventListener('load', function (event) {
+                console.log('Successful response for ' + data);
+            });
+
+            // Define what happens in case of error
+            XHR.addEventListener('error', function (event) {
+                console.log('Unsuccessful response for ' + data);
+            });
+            
+            // Set up our request
+            var url = location.protocol + '//' + document.domain + ':' + location.port + '/control_event';
+
+            XHR.open('POST', url);
+
+            // Add the required HTTP header for form data POST requests
+            XHR.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            // Finally, send our data.
+            XHR.send(urlEncodedData);
+        }
+
+        function control(message) {
+             /*senddata defined above*/
+            sendData({
+                'control': message
+            });
+            console.log("Control \'" + message + "\' sent to robot");
+        }
+
+        
+        //setting up for pantilt control, via get to app.py
+        //not post request like for driving
+        var current_pan = 60;
+        var current_tilt = 60;
+        var pantilt_speed = 5; // Delay between increments in ms
+
+        var interval = null;
+        var current_direction = null;
+        var current_angle = null;
+
+/*        function pt_tilt() {
+            console.log("Control \'" + current_direction + "\' sent to robot");
+
+            var angle = 0;
+            if(current_direction == 'tilt'){
+               current_tilt += current_angle;
+               if(current_tilt < 0) current_tilt = 0;
+               if(current_tilt > 120) current_tilt = 120;
+               angle = current_tilt;
+           }
+           if(current_direction == 'pan'){
+               current_pan += current_angle;
+               if(current_pan < 0) current_pan = 0;
+               //stop the motors instead of stationary running at max angle?
+               if(current_pan > 120) current_pan = 120;
+               angle = current_pan;
+           } 
+           $.get('/api/' + current_direction + '/' + angle); 
+        }*/
+        
+        function pt_pan() {
+           var angle = 0;
+           if(current_direction == 'pan'){
+               current_pan += current_angle;
+               if(current_pan < 0) current_pan = 0;
+               //stop the motors instead of stationary running at max angle?
+               if(current_pan > 120) current_pan = 120;
+               angle = current_pan;
+           }
+           pantilt(current_direction, angle);
+/*           $.get('/api/' + current_direction + '/' + angle); */
+        }
+
+        function pt_stop() {
+            current_direction == 'off';
+            //any angle is good, not used just needs to be valid
+            angle = 333;
+            pantilt(current_direction, angle);
+/*            $.get('/api/' + current_direction + '/' + angle);*/
+
+        }
+
+        function pantilt_stop() {
+            control("ptstop");
+        }
+        function pantilt_up() {
+            control("pttup");
+        }
+        function pantilt_left() {
+            control("pttleft");
+        }
+        function pantilt_right() {
+            control("pttright");
+        }        
+        function pantilt_down() {
+            control("pttdown");
+        }        
+        function hardright() {
+            control("hr");
+        }
+        function softright() {
+            control("sr");
+        }            
+        function forward() {
+            control("f");
+        }
+        function softleft() {
+            control("sl");
+        }
+        function hardleft() {
+            control("hl");
+        }
+
+        function left() {
+            control("l");
+        }
+
+        function right() {
+            control("r");
+        }
+
+        function backward() {
+            control("b");
+        }
+
+        function stop() {
+            control("s");
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (event.which === 87 || event.which === 38) {
+                forward();
+            } else if (event.which === 68 || event.which === 39) {
+                right();
+            } else if (event.which === 83 || event.which === 40) {
+                backward();
+            } else if (event.which === 65 || event.which === 37) {
+                left();
+            }
+        });
+
+        document.addEventListener("keyup", function (event) {
+            if (event.which === 87 || event.which === 38 ||
+                event.which === 68 || event.which === 39 ||
+                event.which === 83 || event.which === 40 ||
+                event.which === 65 || event.which === 37) {
+                stop();
+            }
+        });
+    </script>
+</head>
+
+<body>
+
+    <div id="control_area">
+        <!-- splitting the single joystick id in a left and reight id  for drive = right nipple an dleft= pantilt nipple -->
+<!--         <div class="zone joystick active" id="joystick"></div> -->
+
+
+<div id="left"></div>
+<div id="right"></div>
+ <canvas id="videoCanvas" width="{{ canvas_size.width }}" height="{{ canvas_size.height }}">
+<!-- <iframe src="http://78.23.48.196/camera/mintest.php" width="100%" height="100%"></iframe> -->
+        </canvas>
+
+    </div>
+</body>
+<script type="text/javascript" charset="utf-8">
+// DIFFERENTIAL DRIVE
+//AS LONG AS THE JOYSTICK STAYS IN THE SAME PLANE
+// THERE IS NO CHANGE IN EVENT
+//HENCE IT STAYS TOO LONG AND JUMPS FROM 
+// LEFT TO RIGHT WITH OUT GOING STRAIGHT
+// MAKE RADIAL CHANGES BASED ON RADIUS
+// https://codepen.io/bogeuh/pen/baopRY
+//while plain:up
+//     check degree
+//     0-30 : sharp rightTurn
+//     30-60 : soft rightTurn
+//     60-120 : forward
+//     120-150 : soft left Turn
+//     150-180: sharp left Turn
+// while plain down: same
+//
+//NIPPLEJS ANGLE CHECKING
+//
+// nipple.on('move', function (evt, data) {
+//   event.innerHTML = 'move';
+//   dir.innerHTML = data.angle.degree;
+//   dis.innerHTML = data.distance;
+//   det.innerHTML = 'rolling';
+//   if (data.angle.degree < 30 && data.angle.degree > 0)
+//     det.innerHTML = "fw sharp right";
+//   if (data.angle.degree > 30 && data.angle.degree < 60)
+//     det.innerHTML = "fw soft right";   
+//   if (data.angle.degree > 60 && data.angle.degree < 120)
+//     det.innerHTML = "forward";
+//   if (data.angle.degree > 120 && data.angle.degree < 150)
+//     det.innerHTML = "fw soft left";
+//   if (data.angle.degree > 150 && data.angle.degree < 180)
+//     det.innerHTML = "fw hard left";
+//   if (data.angle.degree > 180 && data.angle.degree < 210)
+//     det.innerHTML = "bw hard left";
+//   if (data.angle.degree > 210 && data.angle.degree < 240)
+//     det.innerHTML = "bw hard left";
+//   if (data.angle.degree > 240 && data.angle.degree < 300)
+//     det.innerHTML = "backward";
+//   if (data.angle.degree > 300 && data.angle.degree < 330)
+//     det.innerHTML = "bw soft right";
+//   if (data.angle.degree > 330 && data.angle.degree < 360)
+//     det.innerHTML = "bw hard right";
+// });
+
+//need to create a second joystick manager
+// Original 
+// https://codepen.io/YoannM/pen/pjQvzR
+// Mine - joystick code only - no  actions mapped
+// https://codepen.io/bogeuh/pen/VyzWRE
+    var pantiltstick = nipplejs.create({
+        zone: document.getElementById('left'),
+        mode: 'static',
+        position: { left: '20%', top: '50%' },
+        color: 'green',
+        size: 200
+    });
+
+    var drivestick = nipplejs.create({
+        zone: document.getElementById('right'),
+        mode: 'static',
+        position: { left: '80%', top: '50%' },
+        color: 'red',
+        size: 200
+    });
+      //stop(); 
+/*    drivestick.on("plain:up", function (event) {
+        stop();
+        drivestick.on('move', function (event, data) {
+     
+          if (data.angle.degree < 30 && data.angle.degree > 0)
+            
+            hardright();
+          if (data.angle.degree > 30 && data.angle.degree < 60)
+            
+            softright();  
+          if (data.angle.degree > 60 && data.angle.degree < 120)
+            
+            forward();
+          if (data.angle.degree > 120 && data.angle.degree < 150)
+            
+            softleft();
+          if (data.angle.degree > 150 && data.angle.degree < 180)
+            
+            hardleft();
+          // if (data.angle.degree > 180 && data.angle.degree < 210)
+          //   det.innerHTML = "bw hard left";
+          // if (data.angle.degree > 210 && data.angle.degree < 240)
+          //   det.innerHTML = "bw hard left";
+          // if (data.angle.degree > 240 && data.angle.degree < 300)
+          //   det.innerHTML = "backward";
+          // if (data.angle.degree > 300 && data.angle.degree < 330)
+          //   det.innerHTML = "bw soft right";
+          // if (data.angle.degree > 330 && data.angle.degree < 360)
+          //   det.innerHTML = "bw hard right";
+        });        
+    });    */  
+    drivestick.on('move', function (event, data) {
+ 
+      if (data.angle.degree < 30 && data.angle.degree > 0)
+        
+        hardright();
+      if (data.angle.degree > 30 && data.angle.degree < 60)
+        
+        softright();  
+      if (data.angle.degree > 60 && data.angle.degree < 120)
+        
+        forward();
+      if (data.angle.degree > 120 && data.angle.degree < 150)
+        
+        softleft();
+      if (data.angle.degree > 150 && data.angle.degree < 180)
+        
+        hardleft();
+      // if (data.angle.degree > 180 && data.angle.degree < 210)
+      //   det.innerHTML = "bw hard left";
+      // if (data.angle.degree > 210 && data.angle.degree < 240)
+      //   det.innerHTML = "bw hard left";
+      // if (data.angle.degree > 240 && data.angle.degree < 300)
+      //   det.innerHTML = "backward";
+      // if (data.angle.degree > 300 && data.angle.degree < 330)
+      //   det.innerHTML = "bw soft right";
+      // if (data.angle.degree > 330 && data.angle.degree < 360)
+      //   det.innerHTML = "bw hard right";
+    });    
+
+    drivestick.on("plain:down", function (event) {
+        stop();
+        backward();
+    });
+    // manager.on("dir:left", function (event) {
+    //     left();
+    // });
+    // manager.on("dir:right", function (event) {
+    //     right();
+    // });
+    drivestick.on("end", function (event) {
+        stop();
+    });
+
+    /*can't work with plain since i'ts both up/down and left/right
+    setting current angle as +1-1+1-1+1-1
+    so dir: */
+    
+    pantiltstick.on('move', function (event, data) {
+      //stop();  
+      if (data.angle.degree < 135 && data.angle.degree > 45)
+        
+        pantilt_up();
+      if (data.angle.degree > 135 && data.angle.degree < 225)
+        
+        pantilt_left();  
+      if (data.angle.degree > 225 && data.angle.degree < 315)
+        
+        pantilt_down();
+      if (data.angle.degree > 315 && data.angle.degree < 361)
+        
+        pantilt_right();
+      if (data.angle.degree > 0 && data.angle.degree < 45)
+        
+        pantilt_right();    
+    });    
+  
+
+    /*pantiltstick.on("dir:down", function (event) {
+        pantilt_down();
+    });
+    pantiltstick.on("dir:left", function (event) {
+        current_direction = 'pan';
+        current_angle = +1;
+        interval = setInterval(pt_pan,pantilt_speed);
+    });
+    pantiltstick.on("dir:right", function (event) {
+        current_direction = 'pan';
+        current_angle = -1;
+        interval = setInterval(pt_pan,pantilt_speed);
+    });*/
+    pantiltstick.on("end", function (event) {
+        //clearInterval(interval);
+        // #still needed after clearing interval?
+        pantilt_stop();
+    });
+</script>
+
+</html>

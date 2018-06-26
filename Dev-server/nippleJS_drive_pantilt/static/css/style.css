@@ -1,0 +1,15 @@
+#control_area {
+    display: inline-block;
+    text-align: center;
+    position: absolute;
+  	left: 0;
+ 	top: 0;
+ 	height: 100%;
+ 	width: 100%;
+}
+
+#stream {
+    display: inline-block;
+    /* width: 100%; */
+    height: 100%;
+}

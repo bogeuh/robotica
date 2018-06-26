@@ -1,0 +1,16 @@
+
+input is POSTed from html/javascript REQUESTed from app.py which calls robot.py functions
+
+
+functioning nipplejs robot control
+robot.py>app.py>index.html
+
+
+original files creating example web interface from 
+/home/pi/share/pantilt-hat/examples/pantiltweb
+pantiltweb.py>gui.html 
+
+
+adapted pantil control for nipplejs
+pantilt.py>ptapp.py>index
+
