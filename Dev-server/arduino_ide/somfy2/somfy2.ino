@@ -22,15 +22,18 @@ const byte interruptPin = 13;
 int state = 0;
 const byte motor_select_Pin = 14;
 const byte motor_up_Pin = 2;
-const byte motor_stop_Pin = 0;
+const byte motor_stop_Pin = 12;
 const byte motor_down_Pin = 15;
 int motor = 0;
 int motor_selected = 0;
 
 
 //built-in blinky is pin0 relay switcher uses 12
+//
 const int lamp = 0;
 const int switcher = 12;
+
+//no i2c used s opin 4 and 5 are usable
 
 // The setup function sets your ESP GPIOs to Outputs, starts the serial communication at a baud rate of 115200
 // Sets your mqtt broker and sets the callback function
